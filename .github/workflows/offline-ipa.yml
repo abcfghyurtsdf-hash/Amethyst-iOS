@@ -1,0 +1,58 @@
+name: Offline IPA (local accounts can install the game)
+
+# Manual only: this never builds by itself, so nothing runs until you press the button.
+on:
+  workflow_dispatch:
+
+env:
+  # Insurance for the CMake 4.x that ships on GitHub's macOS images: older CMakeLists
+  # files that declare a minimum below 3.5 would otherwise be rejected. Ignored by CMake 3.x.
+  CMAKE_POLICY_VERSION_MINIMUM: "3.5"
+
+jobs:
+  ios_ipa:
+    name: Build the iOS .ipa
+    runs-on: macos-26
+    timeout-minutes: 120
+    steps:
+      - name: Check out this repository
+        uses: actions/checkout@v4
+
+      - name: Check out submodules
+        run: git submodule update --init --recursive
+
+      - name: Install GNU make and ldid (the Makefile requires both)
+        run: brew install make ldid
+
+      - name: Install Azul Zulu JDK 8 (launcher.jar must be compiled with javac 8)
+        run: |
+          set -euo pipefail
+          ZULU=zulu8.98.0.107-ca-jdk8.0.512-macosx_aarch64
+          curl -fL --retry 3 -o "$RUNNER_TEMP/jdk8.tar.gz" "https://cdn.azul.com/zulu/bin/$ZULU.tar.gz"
+          mkdir -p "$RUNNER_TEMP/jdk8"
+          tar -xzf "$RUNNER_TEMP/jdk8.tar.gz" -C "$RUNNER_TEMP/jdk8"
+          JAVAC="$(find "$RUNNER_TEMP/jdk8" -type f -name javac | head -n 1)"
+          test -n "$JAVAC"
+          echo "BOOTJDK_DIR=$(dirname "$JAVAC")" >> "$GITHUB_ENV"
+          echo "JAVA_HOME=$(dirname "$(dirname "$JAVAC")")" >> "$GITHUB_ENV"
+          "$JAVAC" -version
+
+      - name: Build (same recipe as upstream's nightly build)
+        run: |
+          export PATH=/opt/homebrew/bin:$PATH
+          gmake -j"$(sysctl -n hw.ncpu)" dsym package PLATFORM=2 BOOTJDK="$BOOTJDK_DIR"
+
+      - name: Upload the .ipa - this is the file to put on the iPad
+        uses: actions/upload-artifact@v4
+        with:
+          name: amethyst-offline-ios
+          path: artifacts/org.angelauramc.amethyst-*-ios.ipa
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload the Java runtimes separately (only needed for a slimmed build)
+        uses: actions/upload-artifact@v4
+        with:
+          name: amethyst-offline-java_runtimes
+          path: artifacts/java_runtimes.zip
+          retention-days: 30

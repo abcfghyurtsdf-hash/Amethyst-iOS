@@ -314,8 +314,8 @@
 
 // Check if the account has permission to download
 - (BOOL)checkAccessWithDialog:(BOOL)show {
-    // for now
-    BOOL accessible = [BaseAuthenticator.current.authData[@"username"] hasPrefix:@"Demo."] || BaseAuthenticator.current.authData[@"xboxGamertag"] != nil;
+    // Local/offline accounts are allowed to install and run the game.
+    BOOL accessible = BaseAuthenticator.current != nil;
     if (!accessible) {
         [self.progress cancel];
         if (show) {
