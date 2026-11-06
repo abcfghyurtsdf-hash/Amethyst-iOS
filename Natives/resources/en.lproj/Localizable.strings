@@ -112,8 +112,8 @@
 "login.warn.title.demomode" = "Your account is Demo";
 "login.warn.message.demomode" = "As a replacement to offline and local mode, demo mode will allow you to sign into a Microsoft account that does not own the game and play the Java Edition trial, introduced in 1.3.1 and newer versions. Older versions contain the full game, as the official launcher does not place these restrictions. See our website to learn more about this transition from offline mode.";
 
-"login.warn.title.localmode" = "Offline mode is now Local mode.";
-"login.warn.message.localmode" = "You can continue to play installed versions, but you can no longer download Minecraft without a paid account. No support will be provided for issues with local accounts, or other means of acquiring Minecraft.";
+"login.warn.title.localmode" = "You are using a local account.";
+"login.warn.message.localmode" = "You can download and install any version, then play by yourself or on servers that have online mode turned off. Realms, servers with online mode enabled, and skins need a paid Minecraft account. Issues with local accounts are not supported by Amethyst.";
 
 "login.msa.error.xsts.noxboxacc" = "An Xbox profile is not registered for this Microsoft account. Please make sure that you have made an Xbox profile.\nError code: 2148916233";
 "login.msa.error.xsts.noxbox" = "Xbox Live is currently unavailable in your country.\nError code: 2148916235";
@@ -173,7 +173,6 @@
 "preference.title.done.erase_demo_data" = "All of the Demo game data has been erased.";
 
 "preference.title.renderer" = "Renderer";
-
 "preference.title.renderer.release.auto" = "Auto";
 "preference.title.renderer.release.gl4es" = "holy gl4es";
 "preference.title.renderer.release.angle" = "ANGLE";
