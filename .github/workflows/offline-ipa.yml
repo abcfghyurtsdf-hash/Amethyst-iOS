@@ -47,11 +47,20 @@ jobs:
       # The Makefile downloads the iOS Java runtimes from assets.angelauramc.dev, and that
       # host currently has no A record, so `make jre` cannot reach it. Fetch the same files
       # into depends/ ourselves - the Makefile skips downloading once depends/java-N-openjdk
-      # exists - and try the official host first so this heals itself if it comes back.
+      # exists. Upstream's own builds are archived on the Internet Archive, so those come
+      # first; third-party rebuilds of the same JDK are only a fallback, and the digest
+      # check in here says which of the two we ended up shipping.
       - name: Fetch the iOS Java runtimes
         run: |
           set -uo pipefail
           { 
+          PROV="$RUNNER_TEMP/provenance.txt"
+          : > "$PROV"
+          # SHA-1 (base32, as recorded by the Internet Archive index) of Amethyst's own
+          # published runtime archives. There is no archived copy of the Java 25 build.
+          EXPECT_8=XYLU527NFSPJBUF6QRHULD334WDC72KM
+          EXPECT_17=G7RNUVN5MBW2KQSH5J56LSY4AJ3PGHFQ
+          EXPECT_21=HD472HCMHJFV4PIGWHYS5SWIFBOKBRJY
           fetch() {
             v="$1"; shift
             if [ -f "depends/java-$v-openjdk/release" ]; then echo "java $v: already unpacked"; return 0; fi
@@ -69,13 +78,27 @@ jobs:
               if [ -z "$inner" ]; then echo "java $v: no tar.xz in there"; rm -rf depends/_dl; continue; fi
               mkdir -p "depends/java-$v-openjdk"
               tar xJf "$inner" -C "depends/java-$v-openjdk" || { rm -rf depends/_dl; continue; }
+              size=$(wc -c < depends/_dl/download)
+              sha1=$(python3 -c 'import base64,hashlib,sys;print(base64.b32encode(hashlib.sha1(open(sys.argv[1],"rb").read()).digest()).decode().rstrip("="))' depends/_dl/download 2>/dev/null || echo unknown)
               rm -rf depends/_dl
               # Some tarballs wrap everything in one directory; flatten that.
               if [ ! -f "depends/java-$v-openjdk/release" ]; then
                 nested=$(find "depends/java-$v-openjdk" -mindepth 2 -maxdepth 2 -name release | head -n 1)
                 if [ -n "$nested" ]; then (cd "$(dirname "$nested")" && mv ./* ../); fi
               fi
-              if [ -f "depends/java-$v-openjdk/release" ]; then echo "java $v: ok from $url"; return 0; fi
+              if [ -f "depends/java-$v-openjdk/release" ]; then
+                eval exp=\${EXPECT_$v:-}
+                match=no
+                if [ -n "$exp" ] && [ "$sha1" = "$exp" ]; then match=YES; fi
+                echo "java $v: ok from $url ($size bytes, upstream build: $match)"
+                {
+                  echo "jre$v source=$url"
+                  echo "  size=$size sha1b32=$sha1 upstream_digest=${exp:-none} upstream_build=$match"
+                  echo "  release file:"
+                  sed 's/^/    /' "depends/java-$v-openjdk/release"
+                } >> "$PROV"
+                return 0
+              fi
               echo "java $v: unpacked but found no JRE, trying the next source"
             done
             echo "java $v: no source worked"
@@ -83,11 +106,13 @@ jobs:
           }
           OFFICIAL=https://assets.angelauramc.dev/openjdk/ios-arm64
           ARCHIVE=https://web.archive.org/web
-          fetch 8  "$OFFICIAL/jre8-ios-aarch64.zip" https://baconium.dev/jessi/jvm/jre8-ios-aarch64.zip "$ARCHIVE/20260520190022if_/https://crystall1ne.dev/cdn/amethyst-ios/jre8-ios-aarch64.zip" || exit 1
-          fetch 17 "$OFFICIAL/jre17-ios-aarch64.zip" https://baconium.dev/jessi/jvm/jre17-ios-aarch64.zip "$ARCHIVE/20260520190022if_/https://crystall1ne.dev/cdn/amethyst-ios/jre17-ios-aarch64.zip" || exit 1
-          fetch 21 "$OFFICIAL/jre21-ios-aarch64.zip" https://baconium.dev/jessi/jvm/jre21-ios-aarch64.zip "$ARCHIVE/20260211132405if_/https://crystall1ne.dev/cdn/amethyst-ios/jre21-ios-aarch64.zip" || exit 1
-          fetch 25 "$OFFICIAL/jre25-ios-aarch64.zip" https://baconium.dev/jessi/jvm/jre25-ios-aarch64.zip https://github.com/vibecodest/Amethyst-iOS/releases/download/jre25-ios-v10/jre25-ios-arm64-20260509-release.tar.xz || exit 1
+          fetch 8  "$ARCHIVE/20260520190022if_/https://crystall1ne.dev/cdn/amethyst-ios/jre8-ios-aarch64.zip" "$OFFICIAL/jre8-ios-aarch64.zip" https://baconium.dev/jessi/jvm/jre8-ios-aarch64.zip || exit 1
+          fetch 17 "$ARCHIVE/20260520190022if_/https://crystall1ne.dev/cdn/amethyst-ios/jre17-ios-aarch64.zip" "$OFFICIAL/jre17-ios-aarch64.zip" https://baconium.dev/jessi/jvm/jre17-ios-aarch64.zip || exit 1
+          fetch 21 "$ARCHIVE/20260211132405if_/https://crystall1ne.dev/cdn/amethyst-ios/jre21-ios-aarch64.zip" "$OFFICIAL/jre21-ios-aarch64.zip" https://baconium.dev/jessi/jvm/jre21-ios-aarch64.zip || exit 1
+          fetch 25 "$OFFICIAL/jre25-ios-aarch64.zip" https://github.com/vibecodest/Amethyst-iOS/releases/download/jre25-ios-v10/jre25-ios-arm64-20260509-release.tar.xz https://baconium.dev/jessi/jvm/jre25-ios-aarch64.zip || exit 1
           du -sh depends/java-*-openjdk
+          echo "===== which runtimes were used ====="
+          cat "$PROV"
           } 2>&1 | tee "$RUNNER_TEMP/fetch.log"
 
       - name: Build (upstream's recipe, with RUNNER=1 so make reuses the runtimes above)
@@ -98,23 +123,34 @@ jobs:
           gmake -j"$(sysctl -n hw.ncpu)" dsym package PLATFORM=2 BOOTJDK="$BOOTJDK_DIR" 2>&1 | tee "$RUNNER_TEMP/build.log"
 
       # The Actions log is only readable by someone signed in, so keep a copy of the
-      # interesting part where anyone can read it.
-      - name: Publish the build log when the build fails
-        if: failure()
+      # interesting parts where anyone can read it: which runtimes went in, always,
+      # and the build log whenever the build fails.
+      - name: Publish the runtime provenance and, on failure, the build log
+        if: always()
+        env:
+          BUILD_FAILED: ${{ failure() }}
         run: |
           set -uo pipefail
-          : > ci-build-log.txt
-          for LOG in "$RUNNER_TEMP/fetch.log" "$RUNNER_TEMP/build.log"; do
-            if [ -f "$LOG" ]; then
-              echo "=== $(basename "$LOG") ===" >> ci-build-log.txt
-              tail -n 250 "$LOG" >> ci-build-log.txt
-            fi
-          done
-          if [ ! -s ci-build-log.txt ]; then echo "no step wrote a log" > ci-build-log.txt; fi
+          added=0
+          if [ -f "$RUNNER_TEMP/provenance.txt" ]; then
+            cp "$RUNNER_TEMP/provenance.txt" runtime-provenance.txt
+            git add -f runtime-provenance.txt; added=1
+          fi
+          if [ "$BUILD_FAILED" = "true" ]; then
+            : > ci-build-log.txt
+            for LOG in "$RUNNER_TEMP/fetch.log" "$RUNNER_TEMP/build.log"; do
+              if [ -f "$LOG" ]; then
+                echo "=== $(basename "$LOG") ===" >> ci-build-log.txt
+                tail -n 250 "$LOG" >> ci-build-log.txt
+              fi
+            done
+            if [ ! -s ci-build-log.txt ]; then echo "no step wrote a log" > ci-build-log.txt; fi
+            git add -f ci-build-log.txt; added=1
+          fi
+          [ "$added" = 1 ] || { echo "nothing to publish"; exit 0; }
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -f ci-build-log.txt
-          git diff --staged --quiet || git commit -m "CI: build log from the failed IPA build"
+          git diff --staged --quiet || git commit -m "CI: runtime provenance for the IPA build"
           git push -f origin "HEAD:refs/heads/build-logs"
 
       - name: Upload the .ipa - this is the file to put on the iPad
