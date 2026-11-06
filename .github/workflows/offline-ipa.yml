@@ -124,11 +124,10 @@ jobs:
 
       # The Actions log is only readable by someone signed in, so keep a copy of the
       # interesting parts where anyone can read it: which runtimes went in, always,
-      # and the build log whenever the build fails.
+      # and the build log whenever the build fails. failure() is only allowed in if:,
+      # so here the absence of an .ipa is what says the build did not finish.
       - name: Publish the runtime provenance and, on failure, the build log
         if: always()
-        env:
-          BUILD_FAILED: ${{ failure() }}
         run: |
           set -uo pipefail
           added=0
@@ -136,7 +135,7 @@ jobs:
             cp "$RUNNER_TEMP/provenance.txt" runtime-provenance.txt
             git add -f runtime-provenance.txt; added=1
           fi
-          if [ "$BUILD_FAILED" = "true" ]; then
+          if ! ls artifacts/org.angelauramc.amethyst-*-ios.ipa >/dev/null 2>&1; then
             : > ci-build-log.txt
             for LOG in "$RUNNER_TEMP/fetch.log" "$RUNNER_TEMP/build.log"; do
               if [ -f "$LOG" ]; then
