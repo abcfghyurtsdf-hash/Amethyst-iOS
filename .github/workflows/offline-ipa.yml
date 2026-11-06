@@ -8,6 +8,9 @@ on:
     branches:
       - build-ipa
 
+permissions:
+  contents: write
+
 env:
   # Insurance for the CMake 4.x that ships on GitHub's macOS images: older CMakeLists
   # files that declare a minimum below 3.5 would otherwise be rejected. Ignored by CMake 3.x.
@@ -43,8 +46,24 @@ jobs:
 
       - name: Build (same recipe as upstream's nightly build)
         run: |
+          set -euo pipefail
           export PATH=/opt/homebrew/bin:$PATH
-          gmake -j"$(sysctl -n hw.ncpu)" dsym package PLATFORM=2 BOOTJDK="$BOOTJDK_DIR"
+          gmake -j"$(sysctl -n hw.ncpu)" dsym package PLATFORM=2 BOOTJDK="$BOOTJDK_DIR" 2>&1 | tee "$RUNNER_TEMP/build.log"
+
+      # The Actions log is only readable by someone signed in, so keep a copy of the
+      # interesting part where anyone can read it.
+      - name: Publish the build log when the build fails
+        if: failure()
+        run: |
+          set -uo pipefail
+          LOG="$RUNNER_TEMP/build.log"
+          if [ ! -f "$LOG" ]; then echo "the build produced no log at all" > "$LOG"; fi
+          tail -n 500 "$LOG" > ci-build-log.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f ci-build-log.txt
+          git diff --staged --quiet || git commit -m "CI: build log from the failed IPA build"
+          git push -f origin "HEAD:refs/heads/build-logs"
 
       - name: Upload the .ipa - this is the file to put on the iPad
         uses: actions/upload-artifact@v4
