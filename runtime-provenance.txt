@@ -1,0 +1,45 @@
+jre8 source=https://web.archive.org/web/20260520190022if_/https://crystall1ne.dev/cdn/amethyst-ios/jre8-ios-aarch64.zip
+  size= 27547126 sha1b32=XYLU527NFSPJBUF6QRHULD334WDC72KM upstream_digest=XYLU527NFSPJBUF6QRHULD334WDC72KM upstream_build=YES
+  release file:
+    JAVA_VERSION="1.8.0_462"
+    OS_NAME="Darwin"
+    OS_VERSION="11.2"
+    OS_ARCH="aarch64"
+    LIBC=""
+    SOURCE=".:git:b6accdf23440+"
+jre17 source=https://web.archive.org/web/20260520190022if_/https://crystall1ne.dev/cdn/amethyst-ios/jre17-ios-aarch64.zip
+  size= 21862441 sha1b32=G7RNUVN5MBW2KQSH5J56LSY4AJ3PGHFQ upstream_digest=G7RNUVN5MBW2KQSH5J56LSY4AJ3PGHFQ upstream_build=YES
+  release file:
+    IMPLEMENTOR="N/A"
+    JAVA_RUNTIME_VERSION="17.0.17-internal+0-adhoc.ci.openjdk-17"
+    JAVA_VERSION="17.0.17"
+    JAVA_VERSION_DATE="2025-10-21"
+    LIBC="default"
+    MODULES="java.base java.compiler java.datatransfer java.xml java.prefs java.desktop java.instrument java.logging java.management java.security.sasl java.naming java.rmi java.management.rmi java.net.http java.scripting java.security.jgss java.transaction.xa java.sql java.sql.rowset java.xml.crypto java.se jdk.accessibility jdk.charsets jdk.crypto.ec jdk.crypto.cryptoki jdk.dynalink jdk.httpserver jdk.internal.vm.ci jdk.jdwp.agent jdk.jfr jdk.jsobject jdk.localedata jdk.management jdk.management.agent jdk.management.jfr jdk.naming.dns jdk.naming.rmi jdk.net jdk.nio.mapmode jdk.sctp jdk.security.auth jdk.security.jgss jdk.unsupported jdk.xml.dom jdk.zipfs"
+    OS_ARCH="aarch64"
+    OS_NAME="Darwin"
+    SOURCE=".:git:3758e584e70c+"
+jre21 source=https://web.archive.org/web/20260211132405if_/https://crystall1ne.dev/cdn/amethyst-ios/jre21-ios-aarch64.zip
+  size= 24072536 sha1b32=HD472HCMHJFV4PIGWHYS5SWIFBOKBRJY upstream_digest=HD472HCMHJFV4PIGWHYS5SWIFBOKBRJY upstream_build=YES
+  release file:
+    IMPLEMENTOR="N/A"
+    JAVA_RUNTIME_VERSION="21.0.8-internal-adhoc.ci.openjdk-21"
+    JAVA_VERSION="21.0.8"
+    JAVA_VERSION_DATE="2025-07-15"
+    LIBC="default"
+    MODULES="java.base java.compiler java.datatransfer java.xml java.prefs java.desktop java.instrument java.logging java.management java.security.sasl java.naming java.rmi java.management.rmi java.net.http java.scripting java.security.jgss java.transaction.xa java.sql java.sql.rowset java.xml.crypto java.se jdk.accessibility jdk.charsets jdk.crypto.ec jdk.crypto.cryptoki jdk.dynalink jdk.httpserver jdk.internal.vm.ci jdk.jdwp.agent jdk.jfr jdk.jsobject jdk.localedata jdk.management jdk.management.agent jdk.management.jfr jdk.naming.dns jdk.naming.rmi jdk.net jdk.nio.mapmode jdk.sctp jdk.security.auth jdk.security.jgss jdk.unsupported jdk.xml.dom jdk.zipfs"
+    OS_ARCH="aarch64"
+    OS_NAME="Darwin"
+    SOURCE=".:git:f4b3a70fa1d7+"
+jre25 source=https://baconium.dev/jessi/jvm/jre25-ios-aarch64.zip
+  size= 43392380 sha1b32=C6HG4KLRE2Q2UBOIZLXGOY5BMUGAR3LN upstream_digest=none upstream_build=no
+  release file:
+    IMPLEMENTOR="N/A"
+    JAVA_RUNTIME_VERSION="25.0.1-internal-adhoc.baconmania.openjdk-25-ios"
+    JAVA_VERSION="25.0.1"
+    JAVA_VERSION_DATE="2025-10-21"
+    LIBC="default"
+    MODULES="java.base java.compiler java.datatransfer java.xml java.prefs java.desktop java.instrument java.logging java.management java.security.sasl java.naming java.rmi java.management.rmi java.net.http java.scripting java.security.jgss java.transaction.xa java.sql java.sql.rowset java.xml.crypto java.se java.smartcardio jdk.accessibility jdk.internal.jvmstat jdk.attach jdk.charsets jdk.internal.opt jdk.zipfs jdk.compiler jdk.crypto.cryptoki jdk.crypto.ec jdk.dynalink jdk.internal.ed jdk.editpad jdk.internal.vm.ci jdk.graal.compiler jdk.graal.compiler.management jdk.hotspot.agent jdk.httpserver jdk.incubator.vector jdk.internal.le jdk.internal.md jdk.jartool jdk.javadoc jdk.jcmd jdk.management jdk.management.agent jdk.jconsole jdk.jdeps jdk.jdwp.agent jdk.jdi jdk.jfr jdk.jlink jdk.jpackage jdk.jshell jdk.jsobject jdk.jstatd jdk.localedata jdk.management.jfr jdk.naming.dns jdk.naming.rmi jdk.net jdk.nio.mapmode jdk.sctp jdk.security.auth jdk.security.jgss jdk.unsupported jdk.unsupported.desktop jdk.xml.dom"
+    OS_ARCH="aarch64"
+    OS_NAME="Darwin"
+    SOURCE=".:git:78770bfaefd2+"
