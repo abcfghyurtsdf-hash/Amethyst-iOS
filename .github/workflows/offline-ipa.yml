@@ -2,6 +2,8 @@ name: Offline IPA (local accounts can install the game)
 
 # Manual only: press the button, or push to the `build-ipa` branch (same thing, but
 # scriptable). Nothing ever builds on its own from normal commits.
+# queue-retry 1: GitHub's macOS arm64 pool dropped the previous attempt with
+# "The job was not acquired by Runner of type hosted even after multiple attempts".
 on:
   workflow_dispatch:
   push:
