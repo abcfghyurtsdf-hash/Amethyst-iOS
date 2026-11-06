@@ -1,8 +1,12 @@
 name: Offline IPA (local accounts can install the game)
 
-# Manual only: this never builds by itself, so nothing runs until you press the button.
+# Manual only: press the button, or push to the `build-ipa` branch (same thing, but
+# scriptable). Nothing ever builds on its own from normal commits.
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - build-ipa
 
 env:
   # Insurance for the CMake 4.x that ships on GitHub's macOS images: older CMakeLists
