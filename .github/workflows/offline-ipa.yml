@@ -31,7 +31,7 @@ jobs:
       - name: Install GNU make and ldid (the Makefile requires both)
         run: brew install make ldid
 
-      - name: Install Azul Zulu Zulu JDK 8 (launcher.jar must be compiled with javac 8)
+      - name: Install Azul Zulu JDK 8 (launcher.jar must be compiled with javac 8)
         run: |
           set -euo pipefail
           ZULU=zulu8.98.0.107-ca-jdk8.0.512-macosx_aarch64
@@ -44,10 +44,53 @@ jobs:
           echo "JAVA_HOME=$(dirname "$(dirname "$JAVAC")")" >> "$GITHUB_ENV"
           "$JAVAC" -version
 
-      - name: Build (same recipe as upstream's nightly build)
+      # The Makefile downloads the iOS Java runtimes from assets.angelauramc.dev, and that
+      # host currently has no A record, so `make jre` cannot reach it. Fetch the same files
+      # into depends/ ourselves - the Makefile skips downloading once depends/java-N-openjdk
+      # exists - and try the official host first so this heals itself if it comes back.
+      - name: Fetch the iOS Java runtimes
+        run: |
+          set -uo pipefail
+          fetch() {
+            v="$1"; shift
+            if [ -f "depends/java-$v-openjdk/release" ]; then echo "java $v: already unpacked"; return 0; fi
+            for url in "$@"; do
+              case "$url" in
+                *.zip) out="depends/jre$v-dl.zip" ;;
+                *) out="depends/jre$v-dl.tar.xz" ;;
+              esac
+              echo "java $v: trying $url"
+              if curl -fL --retry 5 --retry-delay 15 --retry-all-errors --connect-timeout 20 --max-time 1800 -o "$out" "$url"; then
+                mkdir -p "depends/java-$v-openjdk"
+                if [ "${out##*.}" = "zip" ]; then
+                  unzip -q -d depends "$out" && rm -f "$out"
+                  tar xJf depends/jre"$v"-*.tar.xz -C "depends/java-$v-openjdk"
+                  rm -f depends/jre"$v"-*.tar.xz
+                else
+                  tar xJf "$out" -C "depends/java-$v-openjdk"
+                  rm -f "$out"
+                fi
+                if [ -f "depends/java-$v-openjdk/release" ]; then echo "java $v: ok from $url"; return 0; fi
+                echo "java $v: downloaded but did not unpack to a JRE, trying the next source"
+              fi
+              rm -f "$out"
+            done
+            echo "java $v: no source worked"
+            return 1
+          }
+          OFFICIAL=https://assets.angelauramc.dev/openjdk/ios-arm64
+          ARCHIVE=https://web.archive.org/web
+          fetch 8  "$OFFICIAL/jre8-ios-aarch64.zip" https://baconium.dev/jessi/jvm/jre8-ios-aarch64.zip "$ARCHIVE/20260520190022if_/https://crystall1ne.dev/cdn/amethyst-ios/jre8-ios-aarch64.zip" || exit 1
+          fetch 17 "$OFFICIAL/jre17-ios-aarch64.zip" https://baconium.dev/jessi/jvm/jre17-ios-aarch64.zip "$ARCHIVE/20260520190022if_/https://crystall1ne.dev/cdn/amethyst-ios/jre17-ios-aarch64.zip" || exit 1
+          fetch 21 "$OFFICIAL/jre21-ios-aarch64.zip" https://baconium.dev/jessi/jvm/jre21-ios-aarch64.zip "$ARCHIVE/20260211132405if_/https://crystall1ne.dev/cdn/amethyst-ios/jre21-ios-aarch64.zip" || exit 1
+          fetch 25 "$OFFICIAL/jre25-ios-aarch64.zip" https://baconium.dev/jessi/jvm/jre25-ios-aarch64.zip https://github.com/vibecodest/Amethyst-iOS/releases/download/jre25-ios-v10/jre25-ios-arm64-20260509-release.tar.xz || exit 1
+          du -sh depends/java-*-openjdk
+
+      - name: Build (upstream's recipe, with RUNNER=1 so make reuses the runtimes above)
         run: |
           set -euo pipefail
           export PATH=/opt/homebrew/bin:$PATH
+          export RUNNER=1
           gmake -j"$(sysctl -n hw.ncpu)" dsym package PLATFORM=2 BOOTJDK="$BOOTJDK_DIR" 2>&1 | tee "$RUNNER_TEMP/build.log"
 
       # The Actions log is only readable by someone signed in, so keep a copy of the
@@ -57,7 +100,7 @@ jobs:
         run: |
           set -uo pipefail
           LOG="$RUNNER_TEMP/build.log"
-          if [ ! -f "$LOG" ]; then echo "the build produced no log at all" > "$LOG"; fi
+          if [ ! -f "$LOG" ]; then echo "the build did not get as far as writing a log" > "$LOG"; fi
           tail -n 500 "$LOG" > ci-build-log.txt
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
